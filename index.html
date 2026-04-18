@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NYC Affordable Housing Production Analysis</title>
+  <style>
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f4f4f2;
+      --text-primary: #1a1a18;
+      --text-secondary: #6b6b67;
+      --border-light: rgba(0,0,0,0.1);
+      --border-medium: rgba(0,0,0,0.2);
+      --blue-light: #E6F1FB;
+      --blue-mid: #378ADD;
+      --blue-dark: #0C447C;
+      --blue-deeper: #185FA5;
+      --green-mid: #97C459;
+      --accent-left: #378ADD;
+      --metric-bg: #f4f4f2;
+      --grid-color: rgba(0,0,0,0.07);
+      --tick-color: rgba(0,0,0,0.45);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary: #1c1c1a;
+        --bg-secondary: #2a2a28;
+        --text-primary: #f0ede8;
+        --text-secondary: #9a9994;
+        --border-light: rgba(255,255,255,0.1);
+        --border-medium: rgba(255,255,255,0.2);
+        --blue-light: #0c2a42;
+        --blue-mid: #378ADD;
+        --blue-dark: #B5D4F4;
+        --blue-deeper: #85B7EB;
+        --green-mid: #639922;
+        --accent-left: #378ADD;
+        --metric-bg: #2a2a28;
+        --grid-color: rgba(255,255,255,0.08);
+        --tick-color: rgba(255,255,255,0.45);
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.5;
+    }
+
+    .page {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 36px 40px;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-bottom: 1.5px solid var(--border-medium);
+      padding-bottom: 16px;
+      margin-bottom: 20px;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .header .subtitle {
+      font-size: 16px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    .badge {
+      font-size: 16px;
+      background: var(--blue-light);
+      color: var(--blue-dark);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    /* ── Executive Summary ── */
+    .exec-box {
+      background: var(--bg-secondary);
+      border-left: 3px solid var(--accent-left);
+      border-radius: 0 8px 8px 0;
+      padding: 14px 18px;
+      margin-bottom: 20px;
+    }
+
+    .exec-box .section-label {
+      font-size: 20px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--blue-deeper);
+      margin-bottom: 7px;
+    }
+
+    .exec-box p {
+      font-size: 16px;
+      color: var(--text-primary);
+      line-height: 1.65;
+    }
+
+    /* ── Metric Cards ── */
+    .metric-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 600px) {
+      .metric-row { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .metric {
+      background: var(--metric-bg);
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+
+    .metric .label {
+      font-size: 16px;
+      color: var(--text-secondary);
+      margin-bottom: 5px;
+      line-height: 1.4;
+    }
+
+    .metric .value {
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .metric .sub {
+      font-size: 16px;
+      color: var(--text-secondary);
+      margin-top: 3px;
+    }
+
+    /* ── Charts ── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+/* 
+    @media (max-width: 680px) {
+      .two-col { grid-template-columns: 1fr; }
+    } */
+
+    .chart-block .section-label {
+      font-size: 10.5px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .legend span {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .legend-sq {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    .chart-wrap {
+      position: relative;
+      width: 100%;
+      height: 280px;
+    }
+
+    /* ── Findings & CTA ── */
+    .findings-cta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 680px) {
+      .findings-cta { grid-template-columns: 1fr; }
+    }
+
+    .findings .section-label,
+    .cta .section-label {
+      font-size: 20px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+    }
+
+    .finding-item {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+      align-items: flex-start;
+    }
+
+    .finding-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--blue-mid);
+      margin-top: 5px;
+      flex-shrink: 0;
+    }
+
+    .finding-item p {
+      font-size: 16px;
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
+
+    .cta-item {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+      align-items: flex-start;
+    }
+
+    .cta-num {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--blue-mid);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .cta-item p {
+      font-size: 16px;
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      border-top: 0.5px solid var(--border-light);
+      padding-top: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .footer p {
+      font-size: 16px;
+      color: var(--text-secondary);
+    }
+    a {
+        color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <!-- Header -->
+    <div class="header">
+      <div>
+        <h1>NYC Affordable Housing Production Analysis</h1>
+        <p class="subtitle">Department of Housing Preservation and Development (HPD) — NYC Open Data</p>
+      </div>
+      <span class="badge">2014 – Present</span>
+    </div>
+
+    <!-- Executive Summary -->
+    <div class="exec-box">
+      <div class="section-label">Executive Summary</div>
+      <p>
+        This analysis examines HPD's Affordable Housing Production by Building dataset (8,983 rows) to evaluate
+        whether housing production aligns with the goals of two mayoral plans: the Housing New York Plan (2014–2021)
+        and Housing Our Neighbors: A Blueprint for Housing &amp; Homelessness (2022–present). Findings reveal persistent
+        geographic inequities across boroughs, a citywide shift toward smaller unit types, and a growing pipeline of
+        incomplete projects under the newer plan. Note: stakeholder role is assumed for analytical purposes —
+        this team is not contracted with HPD.
+      </p>
+    </div>
+
+    <!-- Metric Cards -->
+    <div class="metric-row">
+      <div class="metric">
+        <div class="label">Total units (both plans)</div>
+        <div class="value">307,416</div>
+        <div class="sub">All counted affordable units</div>
+      </div>
+      <div class="metric">
+        <div class="label">Housing New York (2014–2021)</div>
+        <div class="value">205,102</div>
+        <div class="sub">5,733 projects</div>
+      </div>
+      <div class="metric">
+        <div class="label">Housing Our Neighbors (2022–present)</div>
+        <div class="value">102,314</div>
+        <div class="sub">3,250 projects</div>
+      </div>
+      <div class="metric">
+        <div class="label">NTAs with HPD activity</div>
+        <div class="value">182</div>
+        <div class="sub">of 262 city-wide NTAs</div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="two-col">
+      <div class="chart-block">
+        <div class="section-label">Affordable units by borough and plan period</div>
+        <div class="legend">
+          <span><span class="legend-sq" style="background:#378ADD;"></span>Housing New York 2014–2021</span>
+          <span><span class="legend-sq" style="background:#97C459;"></span>Housing Our Neighbors 2022–present</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="boroughChart"
+            role="img"
+            aria-label="Grouped bar chart showing affordable housing units by borough under both plans. Bronx leads at 101,188 total units.">
+            Bronx: 69,533 (HNY) + 31,655 (HON). Brooklyn: 52,867 + 34,018. Manhattan: 51,705 + 19,854. Queens: 27,867 + 13,744. Staten Island: 3,130 + 3,043.
+          </canvas>
+        </div>
+      </div>
+
+      <div class="chart-block">
+        <div class="section-label">Distribution of units by bedroom type (both plans)</div>
+        <div class="legend">
+          <span><span class="legend-sq" style="background:#185FA5;"></span>Larger unit types</span>
+          <span><span class="legend-sq" style="background:#B5D4F4;"></span>Scarce unit types (4-BR+)</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="unitTypeChart"
+            role="img"
+            aria-label="Bar chart of unit types. 1-BR leads at 111,271 units, followed by 2-BR at 101,827. 4-BR and above are extremely scarce.">
+            1-BR: 111,271. 2-BR: 101,827. Studio: 53,244. 3-BR: 34,314. 4-BR: 2,846. 5-BR: 191. 6-BR+: 94.
+          </canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Findings & CTA -->
+    <div class="findings-cta">
+      <div class="findings">
+        <div class="section-label">Key Findings</div>
+
+        <div class="finding-item">
+          <div class="finding-dot"></div>
+          <p>Bronx, Brooklyn, and Manhattan are the top three boroughs under both plans. Queens and Staten Island consistently rank at the bottom — Queens' activity is largely limited to new construction.</p>
+        </div>
+        <div class="finding-item">
+          <div class="finding-dot"></div>
+          <p>1-BR and 2-BR units dominate production (111,271 and 101,827 respectively). Larger family-sized units (4-BR+) are extremely scarce citywide.</p>
+        </div>
+        <div class="finding-item">
+          <div class="finding-dot"></div>
+          <p>Preservation is the dominant strategy in Manhattan; the Bronx and Brooklyn show a more balanced mix of new construction and preservation.</p>
+        </div>
+        <div class="finding-item">
+          <div class="finding-dot"></div>
+          <p>~14.7% of preservation projects (1,319 rows) were Extended Affordability Only — no physical construction occurred, only a regulatory agreement was secured.</p>
+        </div>
+        <div class="finding-item">
+          <div class="finding-dot"></div>
+          <p>Smaller projects complete in 1–2 years on average; larger developments average ~4 years with greater variability in timeline.</p>
+        </div>
+      </div>
+
+      <div class="cta">
+        <div class="section-label">Recommendations</div>
+
+        <div class="cta-item">
+          <div class="cta-num">1</div>
+          <p>HPD should prioritize targeted investment in Queens and Staten Island, which show persistent underproduction despite Queens having demonstrated new construction capacity.</p>
+        </div>
+        <div class="cta-item">
+          <div class="cta-num">2</div>
+          <p>Incentives, zoning adjustments, or targeted programs are needed to grow the supply of 3-BR+ units and better serve larger households currently underserved by both plans.</p>
+        </div>
+        <div class="cta-item">
+          <div class="cta-num">3</div>
+          <p>HPD should separately track and report Extended Affordability Only projects to more accurately reflect the physical impact of preservation activity on housing conditions.</p>
+        </div>
+        <div class="cta-item">
+          <div class="cta-num">4</div>
+          <p>The Bronx led production under Housing New York but shows declining completions under Housing Our Neighbors — HPD should investigate whether project pipeline stagnation requires intervention.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p><a href="https://data.cityofnewyork.us/Housing-Development/Affordable-Housing-Production-by-Building/hg8x-zxpr/about_data">Data: NYC Open Data — Affordable Housing Production by Building</a> &nbsp;|&nbsp; Tools: Google Sheets, Tableau</p>
+      <p>Team: Ari Pewzner, Ayesha Ahmad, Mark Carpenay, Zahin Zaman, Absa Toure</p>
+    </div>
+
+  </div>
+
+  <!-- Chart.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <script>
+    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const tickColor = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)';
+    const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
+
+    // Borough chart
+    new Chart(document.getElementById('boroughChart'), {
+      type: 'bar',
+      data: {
+        labels: ['Bronx', 'Brooklyn', 'Manhattan', 'Queens', 'Staten Is.'],
+        datasets: [
+          {
+            label: 'Housing New York 2014–2021',
+            data: [69533, 52867, 51705, 27867, 3130],
+            backgroundColor: '#378ADD',
+            borderRadius: 3
+          },
+          {
+            label: 'Housing Our Neighbors 2022–present',
+            data: [31655, 34018, 19854, 13744, 3043],
+            backgroundColor: '#97C459',
+            borderRadius: 3
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: {
+            ticks: { color: tickColor, font: { size: 11 } },
+            grid: { display: false }
+          },
+          y: {
+            ticks: {
+              color: tickColor,
+              font: { size: 11 },
+              callback: v => (v / 1000) + 'k'
+            },
+            grid: { color: gridColor }
+          }
+        }
+      }
+    });
+
+    // Unit type chart
+    new Chart(document.getElementById('unitTypeChart'), {
+      type: 'bar',
+      data: {
+        labels: ['1-BR', '2-BR', 'Studio', '3-BR', '4-BR', '5-BR', '6-BR+'],
+        datasets: [{
+          label: 'Units',
+          data: [111271, 101827, 53244, 34314, 2846, 191, 94],
+          backgroundColor: ['#185FA5','#185FA5','#185FA5','#185FA5','#B5D4F4','#B5D4F4','#B5D4F4'],
+          borderRadius: 3
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: {
+            ticks: { color: tickColor, font: { size: 11 } },
+            grid: { display: false }
+          },
+          y: {
+            ticks: {
+              color: tickColor,
+              font: { size: 11 },
+              callback: v => (v / 1000) + 'k'
+            },
+            grid: { color: gridColor }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
